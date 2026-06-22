@@ -193,5 +193,4 @@
   background: linear-gradient(90deg, transparent, oklch(0.86 0.08 85 / 0.4), transparent);
   background-size: 200% 100%;
   animation: shimmer-x 3s linear infinite;
-  }
 }
