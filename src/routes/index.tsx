@@ -261,6 +261,12 @@ function Index() {
                     <input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          runConcierge(query);
+                        }
+                      }}
                       placeholder="Ask the concierge — “Royal shave in Banjara Hills, Friday 7pm”"
                       className="w-full bg-transparent font-display text-lg text-foreground placeholder:text-muted-foreground/70 focus:outline-none md:text-xl"
                     />
@@ -270,7 +276,10 @@ function Index() {
                       <MapPin className="h-3.5 w-3.5 text-gold" />
                       {activeArea}
                     </div>
-                    <button className="group inline-flex items-center gap-2 rounded-sm bg-[var(--gradient-gold)] px-5 py-3 text-xs font-medium uppercase tracking-[0.2em] text-primary-foreground shadow-gold transition-transform hover:-translate-y-0.5">
+                    <button
+                      onClick={() => runConcierge(query || SUGGESTIONS[0])}
+                      className="group inline-flex items-center gap-2 rounded-sm bg-[var(--gradient-gold)] px-5 py-3 text-xs font-medium uppercase tracking-[0.2em] text-primary-foreground shadow-gold transition-transform hover:-translate-y-0.5"
+                    >
                       <Search className="h-4 w-4" />
                       Curate
                     </button>
@@ -283,7 +292,7 @@ function Index() {
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
-                    onClick={() => setQuery(s)}
+                    onClick={() => runConcierge(s)}
                     className="border-gold-hairline rounded-full px-4 py-2 text-xs text-muted-foreground transition-colors hover:bg-gold/10 hover:text-foreground"
                   >
                     {s}
