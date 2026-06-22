@@ -139,6 +139,7 @@ function Index() {
   const [activeArea, setActiveArea] = useState<string>("Jubilee Hills");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [conciergeQuery, setConciergeQuery] = useState<string | null>(null);
 
   const total = useMemo(() => cart.reduce((s, c) => s + c.price, 0), [cart]);
 
@@ -146,6 +147,62 @@ function Index() {
     setCart((prev) => (prev.find((p) => p.id === item.id) ? prev : [...prev, item]));
     setDrawerOpen(true);
   };
+
+  const runConcierge = (q: string) => {
+    const trimmed = q.trim();
+    if (!trimmed) return;
+    setQuery(trimmed);
+    setConciergeQuery(trimmed);
+    if (typeof window !== "undefined") {
+      requestAnimationFrame(() => {
+        document.getElementById("treatments")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  };
+
+  const conciergeResults = useMemo(
+    () => [
+      {
+        id: "mirrors-jubilee",
+        salon: "Mirrors Luxury Salon",
+        area: "Jubilee Hills",
+        match: 98,
+        stylist: "Master Imran Qureshi",
+        stylistNote: "12 yrs · Tollywood red-carpet specialist",
+        tags: ["Private Suite Allocated", "Single-blade ritual", "Sandalwood finish"],
+        slot: "Saturday · 7:30 PM",
+        duration: "1h 45m",
+        price: 6800,
+      },
+      {
+        id: "truefitt-banjara",
+        salon: "Truefitt & Hill",
+        area: "Banjara Hills",
+        match: 95,
+        stylist: "Master Arjun Reddy",
+        stylistNote: "Trained in Mayfair · House barber",
+        tags: ["English Heritage Suite", "Hot towel ceremony", "Cognac service"],
+        slot: "Sunday · 11:00 AM",
+        duration: "2h 00m",
+        price: 8400,
+      },
+      {
+        id: "bblunt-gachibowli",
+        salon: "BBlunt Atelier",
+        area: "Gachibowli",
+        match: 92,
+        stylist: "Master Karthik Vaidya",
+        stylistNote: "Celebrity fade architect",
+        tags: ["Private Suite Allocated", "Scalp diagnostic", "Champagne welcome"],
+        slot: "Friday · 6:15 PM",
+        duration: "1h 30m",
+        price: 5400,
+      },
+    ],
+    [],
+  );
+
+  const visibleResults = conciergeResults.slice(0, 3);
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -204,6 +261,12 @@ function Index() {
                     <input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          runConcierge(query);
+                        }
+                      }}
                       placeholder="Ask the concierge — “Royal shave in Banjara Hills, Friday 7pm”"
                       className="w-full bg-transparent font-display text-lg text-foreground placeholder:text-muted-foreground/70 focus:outline-none md:text-xl"
                     />
@@ -213,7 +276,10 @@ function Index() {
                       <MapPin className="h-3.5 w-3.5 text-gold" />
                       {activeArea}
                     </div>
-                    <button className="group inline-flex items-center gap-2 rounded-sm bg-[var(--gradient-gold)] px-5 py-3 text-xs font-medium uppercase tracking-[0.2em] text-primary-foreground shadow-gold transition-transform hover:-translate-y-0.5">
+                    <button
+                      onClick={() => runConcierge(query || SUGGESTIONS[0])}
+                      className="group inline-flex items-center gap-2 rounded-sm bg-[var(--gradient-gold)] px-5 py-3 text-xs font-medium uppercase tracking-[0.2em] text-primary-foreground shadow-gold transition-transform hover:-translate-y-0.5"
+                    >
                       <Search className="h-4 w-4" />
                       Curate
                     </button>
@@ -226,7 +292,7 @@ function Index() {
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
-                    onClick={() => setQuery(s)}
+                    onClick={() => runConcierge(s)}
                     className="border-gold-hairline rounded-full px-4 py-2 text-xs text-muted-foreground transition-colors hover:bg-gold/10 hover:text-foreground"
                   >
                     {s}
@@ -309,6 +375,102 @@ function Index() {
       {/* Treatments */}
       <section id="treatments" className="relative border-t border-border/60">
         <div className="mx-auto max-w-7xl px-6 py-24">
+          {conciergeQuery ? (
+            <>
+              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-gold">
+                    <Sparkles className="h-3.5 w-3.5" /> AI Concierge Recommendations
+                  </div>
+                  <h2 className="mt-3 font-display text-3xl leading-tight md:text-5xl">
+                    For "<em className="text-gold-gradient italic">{conciergeQuery}</em>"
+                  </h2>
+                  <p className="mt-3 max-w-xl text-sm text-muted-foreground">
+                    Three ateliers shortlisted across {activeArea} and nearby. Suites and masters held
+                    privately for the next 30 minutes.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setConciergeQuery(null)}
+                  className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.25em] text-muted-foreground transition-colors hover:text-gold"
+                >
+                  ← Back to all rituals
+                </button>
+              </div>
+
+              <div className="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-3">
+                {visibleResults.map((r) => (
+                  <article
+                    key={r.id}
+                    className="group relative flex flex-col overflow-hidden rounded-sm border border-gold/30 bg-card p-6 transition-all hover:-translate-y-1 hover:shadow-gold"
+                  >
+                    <div className="absolute -inset-px rounded-sm bg-[var(--gradient-gold)] opacity-0 blur-sm transition-opacity group-hover:opacity-30" />
+                    <div className="relative flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.25em] text-gold-soft">
+                          <MapPin className="h-3 w-3" /> {r.area}
+                        </div>
+                        <h3 className="mt-2 font-display text-2xl leading-tight">{r.salon}</h3>
+                      </div>
+                      <div className="border-gold-hairline rounded-full bg-onyx/80 px-3 py-1.5 text-center backdrop-blur">
+                        <div className="font-display text-base text-gold leading-none">{r.match}%</div>
+                        <div className="mt-0.5 text-[8px] uppercase tracking-[0.2em] text-muted-foreground">
+                          Match
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="relative mt-5 border-t border-border/60 pt-4">
+                      <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                        Assigned master
+                      </div>
+                      <div className="mt-1 font-display text-lg text-foreground">{r.stylist}</div>
+                      <div className="text-xs text-muted-foreground">{r.stylistNote}</div>
+                    </div>
+
+                    <div className="relative mt-4 flex flex-wrap gap-1.5">
+                      {r.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-gold/30 bg-gold/5 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-gold-soft"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="relative mt-5 flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 text-gold" /> {r.slot}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 text-gold" /> {r.duration}
+                      </span>
+                    </div>
+
+                    <div className="relative mt-5 flex items-center justify-between border-t border-border/60 pt-5">
+                      <span className="font-display text-2xl text-gold">{formatINR(r.price)}</span>
+                      <button
+                        onClick={() =>
+                          addToCart({
+                            id: r.id,
+                            title: `${r.salon} — ${r.area}`,
+                            meta: `${r.stylist} · ${r.slot}`,
+                            duration: r.duration,
+                            price: r.price,
+                          })
+                        }
+                        className="inline-flex items-center gap-2 rounded-sm bg-[var(--gradient-gold)] px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.2em] text-primary-foreground shadow-gold transition-transform hover:-translate-y-0.5"
+                      >
+                        Reserve via Concierge <ChevronRight className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </>
+          ) : (
+          <>
           <div className="flex items-end justify-between">
             <div>
               <div className="text-[11px] uppercase tracking-[0.3em] text-gold">01 — The treatments</div>
@@ -375,6 +537,8 @@ function Index() {
               </article>
             ))}
           </div>
+          </>
+          )}
         </div>
       </section>
 
