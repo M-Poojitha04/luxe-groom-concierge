@@ -691,15 +691,54 @@ function BookingDrawer({
   area: string;
 }) {
   const count = cart.length;
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const [passId] = useState(
+    () => "NZ-" + Math.random().toString(36).slice(2, 7).toUpperCase(),
+  );
+
+  // Reset wizard each time the drawer is reopened
+  useEffect(() => {
+    if (open) {
+      setStep(1);
+      setConfirmed(false);
+    }
+  }, [open]);
+
+  // Lock body scroll when open
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  const slot = "Saturday · 7:30 PM";
+  const stylist = "Master Imran Qureshi";
+  const atelier = `Mirrors Luxury Salon · ${area}`;
+
+  const canProceed1 = cart.length > 0;
+  const canProceed2 = name.trim().length > 1 && phone.trim().length >= 10;
+
+  const headline =
+    step === 1
+      ? "Review your curated experience"
+      : step === 2
+        ? "VIP guestlist details"
+        : "Final flourish";
+
   return (
     <>
-      {/* trigger */}
+      {/* Floating trigger */}
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen(true)}
         className={`fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-full border border-gold/50 bg-onyx/90 px-5 py-3.5 shadow-gold backdrop-blur-xl transition-all hover:-translate-y-0.5 ${
-          open ? "opacity-0 pointer-events-none" : "opacity-100"
+          open ? "pointer-events-none opacity-0" : "opacity-100"
         }`}
-        aria-label="Open booking summary"
+        aria-label="Open booking"
       >
         <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[var(--gradient-gold)] text-primary-foreground">
           <Calendar className="h-4 w-4" strokeWidth={2} />
@@ -712,86 +751,393 @@ function BookingDrawer({
         <div className="text-left">
           <div className="text-[9px] uppercase tracking-[0.25em] text-gold-soft">Your suite</div>
           <div className="font-display text-base leading-tight">
-            {count === 0 ? "Begin booking" : `${count} ritual${count > 1 ? "s" : ""} · ${formatINR(total)}`}
+            {count === 0
+              ? "Begin booking"
+              : `${count} ritual${count > 1 ? "s" : ""} · ${formatINR(total)}`}
           </div>
         </div>
       </button>
 
-      {/* drawer */}
+      {/* Modal wizard */}
       <div
-        className={`fixed bottom-6 right-6 z-40 w-[calc(100vw-3rem)] max-w-sm origin-bottom-right transition-all duration-300 ${
-          open ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0"
+        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+          open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
+        aria-hidden={!open}
       >
-        <div className="overflow-hidden rounded-md border border-gold/40 bg-onyx/95 shadow-elegant backdrop-blur-2xl">
-          <div className="flex items-center justify-between border-b border-gold/20 px-5 py-4">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.3em] text-gold">Booking suite</div>
-              <div className="font-display text-xl">{area}</div>
-            </div>
-            <button
-              onClick={() => setOpen(false)}
-              className="rounded-full border border-border p-1.5 text-muted-foreground hover:text-gold"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+        {/* backdrop */}
+        <button
+          onClick={() => setOpen(false)}
+          aria-label="Close"
+          className="absolute inset-0 h-full w-full cursor-default bg-onyx/80 backdrop-blur-md"
+        />
 
-          <div className="max-h-80 overflow-y-auto px-5 py-4">
-            {cart.length === 0 ? (
-              <div className="py-10 text-center">
-                <Sparkles className="mx-auto h-6 w-6 text-gold" />
-                <p className="mt-3 font-display text-base text-foreground">Your suite is empty.</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Tap any treatment or look to begin.
-                </p>
+        {/* dialog */}
+        <div
+          className={`absolute inset-x-0 bottom-0 mx-auto w-full max-w-2xl transition-all duration-500 md:bottom-auto md:top-1/2 md:-translate-y-1/2 ${
+            open ? "translate-y-0" : "translate-y-full md:translate-y-[calc(-50%+40px)]"
+          }`}
+        >
+          <div className="relative overflow-hidden rounded-t-2xl border border-gold/40 bg-onyx/95 shadow-elegant backdrop-blur-2xl md:rounded-2xl">
+            {/* gold halo */}
+            <div className="pointer-events-none absolute -inset-px rounded-t-2xl bg-[var(--gradient-gold)] opacity-20 blur md:rounded-2xl" />
+
+            {/* Header */}
+            <div className="relative flex items-center justify-between border-b border-gold/20 px-6 py-5">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.3em] text-gold">
+                  {confirmed ? "Royal Pass issued" : `Step ${step} of 3`}
+                </div>
+                <div className="mt-1 font-display text-2xl">
+                  {confirmed ? "Welcome to Nizams.ai" : headline}
+                </div>
+              </div>
+              <button
+                onClick={() => setOpen(false)}
+                className="rounded-full border border-border p-2 text-muted-foreground transition-colors hover:text-gold"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Stepper */}
+            {!confirmed && (
+              <div className="relative flex items-center gap-2 border-b border-gold/10 px-6 py-3">
+                {[1, 2, 3].map((n) => (
+                  <div key={n} className="flex flex-1 items-center gap-2">
+                    <div
+                      className={`flex h-6 w-6 items-center justify-center rounded-full border text-[10px] font-medium transition-all ${
+                        step >= n
+                          ? "border-gold bg-[var(--gradient-gold)] text-primary-foreground"
+                          : "border-border text-muted-foreground"
+                      }`}
+                    >
+                      {step > n ? <Check className="h-3 w-3" strokeWidth={3} /> : n}
+                    </div>
+                    {n < 3 && (
+                      <div
+                        className={`h-px flex-1 transition-colors ${
+                          step > n ? "bg-gold" : "bg-border"
+                        }`}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Body */}
+            <div className="relative max-h-[65vh] overflow-y-auto px-6 py-6">
+              {step === 1 && !confirmed && (
+                <div className="space-y-5">
+                  <div className="border-gold-hairline rounded-md bg-card/40 p-5">
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.25em] text-gold-soft">
+                      <MapPin className="h-3 w-3" /> Assigned atelier
+                    </div>
+                    <div className="mt-2 font-display text-xl">{atelier}</div>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      With {stylist} · Private suite reserved
+                    </div>
+                    <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-gold">
+                        <Calendar className="h-3 w-3" /> {slot}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-muted-foreground">
+                        <Sparkles className="h-3 w-3 text-gold" /> Pre-selected by AI
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                      Your rituals
+                    </div>
+                    {cart.length === 0 ? (
+                      <div className="mt-3 rounded-md border border-dashed border-gold/30 px-5 py-8 text-center">
+                        <Sparkles className="mx-auto h-5 w-5 text-gold" />
+                        <p className="mt-2 font-display text-base">Your suite is empty.</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Pick a ritual or Tollywood look to begin.
+                        </p>
+                      </div>
+                    ) : (
+                      <ul className="mt-3 space-y-2">
+                        {cart.map((c) => (
+                          <li
+                            key={c.id}
+                            className="flex items-start justify-between gap-3 rounded-sm border border-border/60 bg-card/60 p-3"
+                          >
+                            <div className="min-w-0">
+                              <div className="truncate font-display text-base">{c.title}</div>
+                              <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                                {c.meta}
+                              </div>
+                              <div className="mt-1.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gold">
+                                <Clock className="h-3 w-3" /> {c.duration}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <div className="font-display text-base text-gold">
+                                {formatINR(c.price)}
+                              </div>
+                              <button
+                                onClick={() => remove(c.id)}
+                                className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {step === 2 && !confirmed && (
+                <div className="space-y-5">
+                  <p className="text-sm text-muted-foreground">
+                    A whisper to the maître. We'll text a discreet confirmation within sixty seconds.
+                  </p>
+                  <label className="block">
+                    <span className="text-[10px] uppercase tracking-[0.25em] text-gold-soft">
+                      Full name
+                    </span>
+                    <div className="mt-2 flex items-center gap-3 rounded-sm border border-gold/30 bg-card/60 px-4 py-3 transition-colors focus-within:border-gold">
+                      <User className="h-4 w-4 text-gold" />
+                      <input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="As it should appear on the pass"
+                        className="w-full bg-transparent font-display text-lg focus:outline-none"
+                      />
+                    </div>
+                  </label>
+                  <label className="block">
+                    <span className="text-[10px] uppercase tracking-[0.25em] text-gold-soft">
+                      Phone number
+                    </span>
+                    <div className="mt-2 flex items-center gap-3 rounded-sm border border-gold/30 bg-card/60 px-4 py-3 transition-colors focus-within:border-gold">
+                      <Phone className="h-4 w-4 text-gold" />
+                      <span className="font-display text-lg text-muted-foreground">+91</span>
+                      <input
+                        value={phone}
+                        onChange={(e) =>
+                          setPhone(e.target.value.replace(/[^\d\s]/g, "").slice(0, 12))
+                        }
+                        inputMode="numeric"
+                        placeholder="98XXX XXXXX"
+                        className="w-full bg-transparent font-display text-lg focus:outline-none"
+                      />
+                    </div>
+                  </label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Stored privately. Used only by the concierge to reach you.
+                  </p>
+                </div>
+              )}
+
+              {step === 3 && !confirmed && (
+                <div className="space-y-5">
+                  <p className="text-sm text-muted-foreground">
+                    A final glance before we dispatch the master.
+                  </p>
+                  <div className="border-gold-hairline space-y-3 rounded-md bg-card/40 p-5 text-sm">
+                    <Row label="Guest" value={name || "—"} />
+                    <Row label="Phone" value={phone ? `+91 ${phone}` : "—"} />
+                    <Row label="Atelier" value={atelier} />
+                    <Row label="Master" value={stylist} />
+                    <Row label="Slot" value={slot} />
+                    <Row label="Rituals" value={`${count}`} />
+                    <div className="border-t border-gold/20 pt-3" />
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                        Total
+                      </span>
+                      <span className="font-display text-2xl text-gold">{formatINR(total)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {confirmed && (
+                <RoyalPass
+                  passId={passId}
+                  name={name || "Esteemed guest"}
+                  atelier={atelier}
+                  stylist={stylist}
+                  slot={slot}
+                  total={total}
+                />
+              )}
+            </div>
+
+            {/* Footer / actions */}
+            {!confirmed ? (
+              <div className="relative flex items-center justify-between gap-3 border-t border-gold/20 bg-onyx/80 px-6 py-4">
+                <button
+                  onClick={() => (step === 1 ? setOpen(false) : setStep((s) => (s - 1) as 1 | 2))}
+                  className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.25em] text-muted-foreground hover:text-gold"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  {step === 1 ? "Close" : "Back"}
+                </button>
+
+                {step < 3 ? (
+                  <button
+                    onClick={() => setStep((s) => (s + 1) as 2 | 3)}
+                    disabled={step === 1 ? !canProceed1 : !canProceed2}
+                    className="inline-flex items-center gap-2 rounded-sm bg-[var(--gradient-gold)] px-6 py-3 text-[11px] font-medium uppercase tracking-[0.3em] text-primary-foreground shadow-gold transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-40"
+                  >
+                    Continue <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setConfirmed(true)}
+                    className="inline-flex items-center gap-2 rounded-sm bg-[var(--gradient-gold)] px-6 py-3 text-[11px] font-medium uppercase tracking-[0.3em] text-primary-foreground shadow-gold transition-transform hover:-translate-y-0.5"
+                  >
+                    Confirm appointment <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  </button>
+                )}
               </div>
             ) : (
-              <ul className="space-y-3">
-                {cart.map((c) => (
-                  <li
-                    key={c.id}
-                    className="flex items-start justify-between gap-3 rounded-sm border border-border/60 bg-card/60 p-3"
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate font-display text-base">{c.title}</div>
-                      <div className="mt-0.5 truncate text-xs text-muted-foreground">{c.meta}</div>
-                      <div className="mt-1.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gold">
-                        <Clock className="h-3 w-3" /> {c.duration}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <div className="font-display text-base text-gold">{formatINR(c.price)}</div>
-                      <button
-                        onClick={() => remove(c.id)}
-                        className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <div className="relative flex items-center justify-end gap-3 border-t border-gold/20 bg-onyx/80 px-6 py-4">
+                <button
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center gap-2 rounded-sm bg-[var(--gradient-gold)] px-6 py-3 text-[11px] font-medium uppercase tracking-[0.3em] text-primary-foreground shadow-gold"
+                >
+                  Done
+                </button>
+              </div>
             )}
-          </div>
-
-          <div className="border-t border-gold/20 bg-onyx/80 px-5 py-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-                Subtotal
-              </span>
-              <span className="font-display text-2xl text-gold">{formatINR(total)}</span>
-            </div>
-            <button
-              disabled={cart.length === 0}
-              className="mt-3 w-full rounded-sm bg-[var(--gradient-gold)] py-3 text-xs uppercase tracking-[0.3em] text-primary-foreground shadow-gold transition-transform hover:-translate-y-0.5 disabled:opacity-40"
-            >
-              Confirm with concierge
-            </button>
           </div>
         </div>
       </div>
     </>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">{label}</span>
+      <span className="truncate text-right font-display text-base text-foreground">{value}</span>
+    </div>
+  );
+}
+
+function RoyalPass({
+  passId,
+  name,
+  atelier,
+  stylist,
+  slot,
+  total,
+}: {
+  passId: string;
+  name: string;
+  atelier: string;
+  stylist: string;
+  slot: string;
+  total: number;
+}) {
+  return (
+    <div className="flex flex-col items-center">
+      {/* checkmark */}
+      <div className="animate-ring-pop relative flex h-20 w-20 items-center justify-center rounded-full bg-[var(--gradient-gold)] shadow-gold">
+        <svg viewBox="0 0 52 52" className="h-10 w-10">
+          <path
+            className="animate-draw-check"
+            d="M14 27 l8 8 l16 -18"
+            fill="none"
+            stroke="oklch(0.14 0.008 60)"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+
+      <div className="mt-5 text-center">
+        <div className="text-[10px] uppercase tracking-[0.3em] text-gold">Confirmed</div>
+        <h3 className="mt-1 font-display text-3xl">Your Royal Pass is ready.</h3>
+      </div>
+
+      {/* Ticket */}
+      <div className="relative mt-7 w-full max-w-md">
+        <div className="absolute -inset-1 rounded-lg bg-[var(--gradient-gold)] opacity-40 blur" />
+        <div className="relative overflow-hidden rounded-lg border border-gold/50 bg-gradient-to-br from-onyx via-charcoal to-onyx p-6">
+          <div className="gold-shimmer pointer-events-none absolute inset-x-0 top-0 h-px" />
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Crown className="h-4 w-4 text-gold" />
+              <span className="font-display text-lg">
+                Nizams<span className="text-gold">.ai</span>
+              </span>
+            </div>
+            <span className="text-[10px] uppercase tracking-[0.3em] text-gold-soft">
+              Royal Pass
+            </span>
+          </div>
+
+          <div className="mt-5 border-t border-dashed border-gold/30 pt-5">
+            <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+              Guest
+            </div>
+            <div className="mt-1 font-display text-2xl text-gold-gradient">{name}</div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                Atelier
+              </div>
+              <div className="mt-1 font-display text-base leading-tight">{atelier}</div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                Master
+              </div>
+              <div className="mt-1 font-display text-base leading-tight">{stylist}</div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                Slot
+              </div>
+              <div className="mt-1 font-display text-base leading-tight">{slot}</div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                Total
+              </div>
+              <div className="mt-1 font-display text-base text-gold">{formatINR(total)}</div>
+            </div>
+          </div>
+
+          {/* perforation */}
+          <div className="relative my-6 h-px border-t border-dashed border-gold/30">
+            <span className="absolute -left-9 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-background" />
+            <span className="absolute -right-9 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-background" />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                Pass No.
+              </div>
+              <div className="mt-1 font-display text-lg tracking-[0.2em] text-gold">{passId}</div>
+            </div>
+            <Star className="h-5 w-5 fill-gold text-gold" />
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-5 max-w-sm text-center text-xs text-muted-foreground">
+        A concierge will reconfirm by WhatsApp within ten minutes. Reschedule with a whisper.
+      </p>
+    </div>
   );
 }
