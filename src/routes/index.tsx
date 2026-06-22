@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Sparkles,
   Search,
@@ -12,6 +12,11 @@ import {
   Crown,
   Star,
   ArrowUpRight,
+  ArrowLeft,
+  ArrowRight,
+  User,
+  Phone,
+  Check,
 } from "lucide-react";
 import heroImg from "@/assets/hero.jpg";
 import treatmentShave from "@/assets/treatment-shave.jpg";
