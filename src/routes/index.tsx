@@ -686,6 +686,9 @@ function Index() {
         </div>
       </section>
 
+      </>
+      )}
+
       {/* Floating booking summary */}
       <BookingDrawer
         cart={cart}
