@@ -29,6 +29,7 @@ import look4 from "@/assets/look-4.jpg";
 import { AIConcierge } from "@/components/dashboard/AIConcierge";
 import { Marketplace } from "@/components/dashboard/Marketplace";
 import { Trends } from "@/components/dashboard/Trends";
+import { VisualStudio } from "@/components/dashboard/VisualStudio";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -148,7 +149,7 @@ function Index() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [conciergeQuery, setConciergeQuery] = useState<string | null>(null);
-  const [tab, setTab] = useState<"home" | "concierge" | "marketplace" | "trends">("home");
+  const [tab, setTab] = useState<"home" | "concierge" | "marketplace" | "trends" | "studio">("home");
 
   const total = useMemo(() => cart.reduce((s, c) => s + c.price, 0), [cart]);
 
@@ -230,6 +231,7 @@ function Index() {
               { id: "concierge", label: "AI Concierge" },
               { id: "marketplace", label: "Marketplace & Packages" },
               { id: "trends", label: "Trends" },
+              { id: "studio", label: "AI Visual Studio" },
             ] as const).map((t) => (
               <button
                 key={t.id}
@@ -253,6 +255,7 @@ function Index() {
       {tab === "concierge" && <AIConcierge />}
       {tab === "marketplace" && <Marketplace />}
       {tab === "trends" && <Trends />}
+      {tab === "studio" && <VisualStudio />}
 
       {tab === "home" && (
       <>
