@@ -26,6 +26,9 @@ import look1 from "@/assets/look-1.jpg";
 import look2 from "@/assets/look-2.jpg";
 import look3 from "@/assets/look-3.jpg";
 import look4 from "@/assets/look-4.jpg";
+import { AIConcierge } from "@/components/dashboard/AIConcierge";
+import { Marketplace } from "@/components/dashboard/Marketplace";
+import { Trends } from "@/components/dashboard/Trends";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -145,6 +148,7 @@ function Index() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [conciergeQuery, setConciergeQuery] = useState<string | null>(null);
+  const [tab, setTab] = useState<"home" | "concierge" | "marketplace" | "trends">("home");
 
   const total = useMemo(() => cart.reduce((s, c) => s + c.price, 0), [cart]);
 
@@ -220,11 +224,25 @@ function Index() {
               Nizams<span className="text-gold">.ai</span>
             </span>
           </a>
-          <nav className="hidden items-center gap-10 text-sm text-muted-foreground md:flex">
-            <a href="#treatments" className="transition-colors hover:text-foreground">Treatments</a>
-            <a href="#looks" className="transition-colors hover:text-foreground">Tollywood Looks</a>
-            <a href="#ateliers" className="transition-colors hover:text-foreground">Ateliers</a>
-            <a href="#concierge" className="transition-colors hover:text-foreground">Concierge</a>
+          <nav className="hidden items-center gap-2 text-sm md:flex">
+            {([
+              { id: "home", label: "Home" },
+              { id: "concierge", label: "AI Concierge" },
+              { id: "marketplace", label: "Marketplace & Packages" },
+              { id: "trends", label: "Trends" },
+            ] as const).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`rounded-full px-4 py-2 text-xs uppercase tracking-[0.2em] transition-all ${
+                  tab === t.id
+                    ? "border border-gold/60 bg-gold/10 text-gold"
+                    : "border border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
           </nav>
           <button className="border-gold-hairline rounded-sm bg-transparent px-5 py-2.5 text-xs uppercase tracking-[0.2em] text-foreground transition-all hover:bg-gold hover:text-primary-foreground">
             Sign in
@@ -232,6 +250,12 @@ function Index() {
         </div>
       </header>
 
+      {tab === "concierge" && <AIConcierge />}
+      {tab === "marketplace" && <Marketplace />}
+      {tab === "trends" && <Trends />}
+
+      {tab === "home" && (
+      <>
       {/* Hero */}
       <section className="relative">
         <div className="pointer-events-none absolute inset-0 -z-10">
@@ -661,6 +685,9 @@ function Index() {
           </div>
         </div>
       </section>
+
+      </>
+      )}
 
       {/* Floating booking summary */}
       <BookingDrawer
