@@ -209,6 +209,11 @@
   animation: draw-check 0.55s ease-out 0.35s forwards;
 }
 
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(1200%); }
+}
+
 @utility gold-shimmer {
   background: linear-gradient(90deg, transparent, oklch(0.86 0.08 85 / 0.4), transparent);
   background-size: 200% 100%;
