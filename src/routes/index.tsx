@@ -30,6 +30,7 @@ import { AIConcierge } from "@/components/dashboard/AIConcierge";
 import { Marketplace } from "@/components/dashboard/Marketplace";
 import { Trends } from "@/components/dashboard/Trends";
 import { VisualStudio } from "@/components/dashboard/VisualStudio";
+import { SalonPortal } from "@/components/dashboard/SalonPortal";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -149,7 +150,7 @@ function Index() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [conciergeQuery, setConciergeQuery] = useState<string | null>(null);
-  const [tab, setTab] = useState<"home" | "concierge" | "marketplace" | "trends" | "studio">("home");
+  const [tab, setTab] = useState<"home" | "concierge" | "marketplace" | "trends" | "studio" | "portal">("home");
 
   const total = useMemo(() => cart.reduce((s, c) => s + c.price, 0), [cart]);
 
@@ -246,8 +247,15 @@ function Index() {
               </button>
             ))}
           </nav>
-          <button className="border-gold-hairline rounded-sm bg-transparent px-5 py-2.5 text-xs uppercase tracking-[0.2em] text-foreground transition-all hover:bg-gold hover:text-primary-foreground">
-            Sign in
+          <button
+            onClick={() => setTab(tab === "portal" ? "home" : "portal")}
+            className={`border-gold-hairline rounded-sm px-5 py-2.5 text-xs uppercase tracking-[0.2em] transition-all ${
+              tab === "portal"
+                ? "bg-gold text-primary-foreground"
+                : "bg-transparent text-foreground hover:bg-gold hover:text-primary-foreground"
+            }`}
+          >
+            {tab === "portal" ? "Exit portal" : "Salon portal"}
           </button>
         </div>
       </header>
@@ -256,6 +264,7 @@ function Index() {
       {tab === "marketplace" && <Marketplace />}
       {tab === "trends" && <Trends />}
       {tab === "studio" && <VisualStudio />}
+      {tab === "portal" && <SalonPortal />}
 
       {tab === "home" && (
       <>
