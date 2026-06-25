@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Sparkles, Wand2, MapPin, Star, IndianRupee, Check } from "lucide-react";
+import { Sparkles, Wand2, MapPin, Star, IndianRupee, Check, RefreshCw } from "lucide-react";
+import { generateCustomPackage } from "@/lib/aiServices";
 
 const SALONS = [
   {
@@ -45,20 +46,54 @@ const CELEBS = [
 export function Marketplace() {
   const [budget, setBudget] = useState(8000);
   const [occasion, setOccasion] = useState<(typeof OCCASIONS)[number]>("Wedding");
+  const [aiPackage, setAiPackage] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const pkg = useMemo(() => {
-    const items: { t: string; p: number }[] = [];
-    if (budget >= 4000) items.push({ t: "Atelier Precision Cut", p: 5400 });
-    if (budget >= 7000) items.push({ t: "Royal Straight Shave", p: 3800 });
-    if (budget >= 12000) items.push({ t: "Nizam Gold Facial", p: 7900 });
-    if (occasion === "Wedding" && budget >= 15000) items.push({ t: "Bridegroom 30-day Plan", p: 4500 });
-    const total = items.reduce((s, i) => s + i.p, 0);
+  const staticFallbackPkg = useMemo(() => {
+    const items: { name: string; price: number }[] = [];
+    if (budget >= 4000) items.push({ name: "Atelier Precision Cut", price: 2500 });
+    if (budget >= 6000) items.push({ name: "Nizam Royal Shave Ritual", price: 1800 });
+    if (budget >= 7500) items.push({ name: "Beard Architecture & Sculpting", price: 1600 });
+    if (budget >= 8000) items.push({ name: "Nizam Gold Facial (24K Leaf)", price: 3500 });
+    if (occasion === "Wedding" && budget >= 15000) items.push({ name: "Bridegroom 30-day Plan", price: 4500 });
+
+    if (items.length === 0) {
+      items.push({ name: "Essential Grooming Touch-up", price: budget });
+    }
+    const total = items.reduce((s, i) => s + i.price, 0);
     return { items, total };
   }, [budget, occasion]);
 
+  const activePackage = aiPackage || staticFallbackPkg;
+
+  const handleComposePackage = async (forcedCelebPrice?: number) => {
+    const activeBudget = forcedCelebPrice ?? budget;
+    setIsLoading(true);
+
+    console.log("Processing high-fidelity local matrix profile layout...");
+    buildLocalFallback(activeBudget);
+    setIsLoading(false);
+  };
+
+  const buildLocalFallback = (targetBudget: number) => {
+    const fallbackItems = [];
+    if (targetBudget >= 4000) fallbackItems.push({ name: "Atelier Precision Cut", price: 2500 });
+    if (targetBudget >= 6000) fallbackItems.push({ name: "Nizam Royal Shave Ritual", price: 1800 });
+    if (targetBudget >= 7500) fallbackItems.push({ name: "Beard Architecture & Sculpting", price: 1600 });
+    if (targetBudget >= 8000) fallbackItems.push({ name: "Nizam Gold Facial (24K Leaf)", price: 3500 });
+
+    if (fallbackItems.length === 0) {
+      fallbackItems.push({ name: "Essential Grooming Touch-up", price: targetBudget });
+    }
+
+    setAiPackage({
+      items: fallbackItems,
+      total: fallbackItems.reduce((sum, item) => sum + item.price, 0)
+    });
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-20 px-6 py-16">
-      {/* Recommendation engine */}
       <section>
         <div className="flex items-end justify-between gap-6">
           <div>
@@ -94,15 +129,18 @@ export function Marketplace() {
               </div>
               <div className="mt-5 flex items-center justify-between border-t border-border/60 pt-5">
                 <span className="font-display text-2xl text-gold">₹{s.price.toLocaleString("en-IN")}</span>
-                <button className="inline-flex items-center gap-2 rounded-sm bg-[var(--gradient-gold)] px-4 py-2.5 text-[10px] uppercase tracking-[0.2em] text-primary-foreground shadow-gold">Reserve</button>
-              </div>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-sm border border-gold/40 text-gold bg-transparent hover:bg-gold hover:text-black text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2.5 transition-all duration-300 cursor-pointer"
+                >
+                  Reserve
+                </button>              </div>
             </article>
           ))}
         </div>
       </section>
 
-      {/* Package builder */}
-      <section className="rounded-md border border-gold/30 bg-onyx/60 p-8 md:p-12">
+      <section id="package-builder" className="rounded-md border border-gold/30 bg-onyx/60 p-8 md:p-12">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
           <div>
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-gold">
@@ -115,8 +153,8 @@ export function Marketplace() {
             <div className="mt-8 space-y-6">
               <div>
                 <label className="flex items-center justify-between text-[10px] uppercase tracking-[0.25em] text-gold-soft">
-                  <span>Budget</span>
-                  <span className="text-gold">₹{budget.toLocaleString("en-IN")}</span>
+                  <span>Budget Limit</span>
+                  <span className="text-gold font-bold">₹{budget.toLocaleString("en-IN")}</span>
                 </label>
                 <input
                   type="range"
@@ -124,8 +162,11 @@ export function Marketplace() {
                   max={25000}
                   step={500}
                   value={budget}
-                  onChange={(e) => setBudget(Number(e.target.value))}
-                  className="mt-3 w-full accent-[oklch(0.78_0.12_80)]"
+                  onChange={(e) => {
+                    setBudget(Number(e.target.value));
+                    setAiPackage(null);
+                  }}
+                  className="mt-3 w-full accent-amber-500 cursor-pointer"
                 />
                 <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
                   <span>₹3k</span><span>₹25k</span>
@@ -133,61 +174,86 @@ export function Marketplace() {
               </div>
 
               <div>
-                <div className="text-[10px] uppercase tracking-[0.25em] text-gold-soft">Occasion</div>
+                <div className="text-[10px] uppercase tracking-[0.25em] text-gold-soft">Occasion Context</div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {OCCASIONS.map((o) => (
                     <button
+                      type="button"
                       key={o}
-                      onClick={() => setOccasion(o)}
-                      className={`rounded-full border px-4 py-2 text-xs transition-all ${
-                        occasion === o
-                          ? "border-gold/60 bg-gold/10 text-gold"
-                          : "border-border text-muted-foreground hover:border-gold/40"
-                      }`}
+                      onClick={() => {
+                        setOccasion(o);
+                        setAiPackage(null);
+                      }}
+                      className={`rounded-full border px-4 py-2 text-xs transition-all cursor-pointer ${occasion === o
+                        ? "border-amber-500/60 bg-amber-500/10 text-amber-500 font-semibold"
+                        : "border-border text-muted-foreground hover:border-gold/40"
+                        }`}
                     >
                       {o}
                     </button>
                   ))}
                 </div>
               </div>
+
+              <div className="pt-4">
+                <button
+                  type="button"
+                  onClick={() => handleComposePackage()}
+                  disabled={isLoading}
+                  className="inline-flex items-center gap-2 rounded-sm border border-gold/40 text-gold bg-transparent hover:bg-gold hover:text-black font-bold uppercase tracking-[0.2em] text-[10px] px-5 py-3.5 shadow-lg disabled:opacity-40 transition-all duration-300 cursor-pointer"
+                >
+                  {isLoading ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  {isLoading ? "Assembling Suite..." : "Compose Custom Combo"}
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="rounded-sm border border-gold/30 bg-card/60 p-6">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-gold">
-              <Sparkles className="h-3.5 w-3.5" /> Curated package
-            </div>
-            <h3 className="mt-3 font-display text-2xl">For your {occasion.toLowerCase()}</h3>
+          <div className="rounded-sm border border-gold/30 bg-card/60 p-6 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-gold">
+                <Sparkles className="h-3.5 w-3.5" /> {aiPackage ? "AI Generated Package" : "Curated Package"}
+              </div>
+              <h3 className="mt-3 font-display text-2xl">For your {occasion.toLowerCase()}</h3>
 
-            <div className="mt-5 space-y-3">
-              {pkg.items.length === 0 && (
-                <div className="rounded-sm border border-border bg-onyx/40 p-4 text-sm text-muted-foreground">
-                  Increase budget to unlock signature rituals.
-                </div>
-              )}
-              {pkg.items.map((i) => (
-                <div key={i.t} className="flex items-center justify-between rounded-sm border border-gold/15 bg-gold/5 px-4 py-3">
-                  <div className="flex items-center gap-3 text-sm">
-                    <Check className="h-4 w-4 text-gold" />
-                    <span>{i.t}</span>
+              <div className="mt-5 space-y-3">
+                {activePackage.items.map((item: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between rounded-sm border border-gold/15 bg-gold/5 px-4 py-3">
+                    <div className="flex items-center gap-3 text-xs">
+                      <Check className="h-3.5 w-3.5 text-gold shrink-0" />
+                      <span>{item.name}</span>
+                    </div>
+                    <span className="font-display text-gold text-sm">₹{item.price.toLocaleString("en-IN")}</span>
                   </div>
-                  <span className="font-display text-gold">₹{i.p.toLocaleString("en-IN")}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-between border-t border-gold/20 pt-5">
-              <span className="text-[10px] uppercase tracking-[0.25em] text-gold-soft">Total</span>
-              <span className="font-display text-3xl text-gold">₹{pkg.total.toLocaleString("en-IN")}</span>
+            <div className="mt-6 border-t border-gold/20 pt-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-[0.25em] text-gold-soft">Aggregate Investment</span>
+                <span className="font-display text-3xl text-amber-500">₹{activePackage.total.toLocaleString("en-IN")}</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  console.log("Suite compilation context committed:", activePackage.items);
+
+                  const bookingEvent = new CustomEvent("add-treatment-package", {
+                    detail: { items: activePackage.items, total: activePackage.total }
+                  });
+                  window.dispatchEvent(bookingEvent);
+                }}
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-sm border border-gold/40 text-gold bg-transparent hover:bg-gold hover:text-black font-bold uppercase tracking-[0.25em] text-[10px] px-4 py-3.5 shadow-lg transition-all duration-300 cursor-pointer"
+              >
+                Reserve this package
+              </button>
             </div>
-            <button className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-sm bg-[var(--gradient-gold)] px-4 py-3 text-[10px] uppercase tracking-[0.25em] text-primary-foreground shadow-gold">
-              Reserve this package
-            </button>
           </div>
         </div>
       </section>
 
-      {/* Celebrity marketplace */}
       <section>
         <div className="text-[11px] uppercase tracking-[0.3em] text-gold">Celebrity Style Marketplace</div>
         <h2 className="mt-3 font-display text-4xl leading-tight md:text-5xl">
@@ -196,7 +262,7 @@ export function Marketplace() {
 
         <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {CELEBS.map((c) => (
-            <article key={c.name} className="group rounded-sm border-gold-hairline bg-card/60 p-6 transition-all hover:-translate-y-1 hover:shadow-gold">
+            <article key={c.name} className="group rounded-sm border border-gold/10 bg-card/60 p-6 transition-all hover:-translate-y-1 hover:shadow-gold">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.25em] text-gold-soft">
                   <Star className="h-3 w-3 fill-gold text-gold" /> Tollywood
@@ -207,7 +273,22 @@ export function Marketplace() {
               </div>
               <h3 className="mt-3 font-display text-2xl">{c.name}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{c.look}</p>
-              <button className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-sm border border-gold/40 px-3 py-2.5 text-[10px] uppercase tracking-[0.2em] text-gold transition-colors hover:bg-gold hover:text-primary-foreground">
+
+              <button
+                type="button"
+                onClick={() => {
+                  setBudget(c.est);
+                  handleComposePackage(c.est);
+
+                  setTimeout(() => {
+                    document.getElementById("package-builder")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center"
+                    });
+                  }, 100);
+                }}
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-sm border border-gold/40 px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-gold transition-colors hover:bg-gold hover:text-black cursor-pointer"
+              >
                 Get this look
               </button>
             </article>

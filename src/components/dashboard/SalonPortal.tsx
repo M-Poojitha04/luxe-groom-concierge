@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   TrendingUp,
   AlertTriangle,
@@ -11,7 +11,9 @@ import {
   Star,
   AlertCircle,
   Tag,
+  RefreshCw,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const FORECAST = [
   { day: "Mon", load: 42 },
@@ -67,6 +69,7 @@ const HOURS = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "1
 const DAYS = ["Wed", "Thu", "Fri", "Sat", "Sun"];
 
 type SlotState = "free" | "booked" | "hold" | "vip";
+
 const SEED: Record<string, SlotState> = {
   "Wed-11:00": "booked", "Wed-14:00": "hold", "Wed-17:00": "booked",
   "Thu-10:00": "booked", "Thu-15:00": "vip", "Thu-18:00": "booked",
@@ -86,6 +89,28 @@ function cellClass(s: SlotState) {
 
 export function SalonPortal() {
   const [slots, setSlots] = useState<Record<string, SlotState>>(SEED);
+  const [liveBookingCount, setLiveBookingCount] = useState<number | null>(null);
+  const [metricLoading, setMetricLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchTotalBookings() {
+      try {
+        setMetricLoading(true);
+        const { count, error } = await supabase
+          .from("bookings")
+          .select("*", { count: "exact", head: true });
+
+        if (!error && count !== null) {
+          setLiveBookingCount(count);
+        }
+      } catch (err) {
+        console.error("Failed to read platform metric count:", err);
+      } finally {
+        setMetricLoading(false);
+      }
+    }
+    fetchTotalBookings();
+  }, []);
 
   const toggle = (key: string) => {
     setSlots((p) => {
@@ -127,14 +152,39 @@ export function SalonPortal() {
               <div className="font-display text-xl">Book at 3 PM, Save ₹300 · Off-peak surge ends in 02:14:08</div>
             </div>
           </div>
-          <button className="rounded-full border border-gold/60 bg-gold px-5 py-2 text-xs uppercase tracking-[0.25em] text-primary-foreground hover:bg-gold/90">
+          <button className="rounded-full border border-gold/60 bg-gold px-5 py-2 text-xs uppercase tracking-[0.25em] text-primary-foreground hover:bg-gold/90 cursor-pointer">
             Apply pricing rules
           </button>
         </div>
       </div>
 
       {/* Owner metrics grid */}
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-4">
+        {/* NEW: Live Supabase Relational Synchronization Telemetry Widget */}
+        <div className="rounded-2xl border border-gold/30 bg-gradient-to-b from-amber-500/10 to-transparent p-5 shadow-lg flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-amber-500 font-bold">
+              <CalendarIcon className="h-4 w-4" /> Active Bookings
+            </div>
+            <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[8px] uppercase tracking-widest text-emerald-300">
+              PostgreSQL Live
+            </span>
+          </div>
+          <div className="my-4">
+            <div className="font-display text-5xl font-black text-foreground tracking-tight flex items-center gap-2">
+              {metricLoading ? (
+                <RefreshCw className="h-8 w-8 text-gold animate-spin" />
+              ) : (
+                liveBookingCount ?? 0
+              )}
+            </div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-2">Appointments synced via Supabase client</p>
+          </div>
+          <p className="text-[11px] text-muted-foreground/90 leading-relaxed border-t border-gold/10 pt-2">
+            Dynamic real-time dashboard registration. Counters increment immediately upon client generation of a secure Royal Pass checkout signature.
+          </p>
+        </div>
+
         {/* Forecast */}
         <div className="rounded-2xl border border-gold/15 bg-card/40 p-5">
           <div className="flex items-center justify-between">
@@ -176,8 +226,8 @@ export function SalonPortal() {
             {REVENUE.map((r) => (
               <div key={r.name}>
                 <div className="mb-1 flex items-center justify-between text-xs">
-                  <span className="text-foreground/90">{r.name}</span>
-                  <span className="text-muted-foreground">{r.pct}% · ₹{(r.rev / 1000).toFixed(0)}k</span>
+                  <span className="text-foreground/90 text-[11px] truncate max-w-[140px]">{r.name}</span>
+                  <span className="text-muted-foreground text-[11px] shrink-0">{r.pct}% · ₹{(r.rev / 1000).toFixed(0)}k</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-foreground/10">
                   <div className="h-full bg-gradient-to-r from-gold to-amber-200" style={{ width: `${r.pct * 2.8}%` }} />
@@ -200,12 +250,12 @@ export function SalonPortal() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-display text-base">{s.name}</div>
-                    <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                    <div className="font-display text-sm leading-tight">{s.name}</div>
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
                       {s.count} guests · Avg LTV {s.ltv}
                     </div>
                   </div>
-                  <Sparkles className="h-4 w-4 text-gold" />
+                  <Sparkles className="h-4 w-4 text-gold shrink-0" />
                 </div>
               </div>
             ))}
@@ -220,7 +270,7 @@ export function SalonPortal() {
             <div className="text-[10px] uppercase tracking-[0.3em] text-gold">02 · Atelier roster</div>
             <h2 className="mt-1 font-display text-2xl">Stylist Profiles</h2>
           </div>
-          <button className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-gold">
+          <button className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-gold cursor-pointer">
             + Invite stylist
           </button>
         </div>
@@ -300,7 +350,7 @@ export function SalonPortal() {
                       <button
                         key={k}
                         onClick={() => toggle(k)}
-                        className={`h-10 rounded-md border text-[10px] uppercase tracking-widest transition-all ${cellClass(s)}`}
+                        className={`h-10 rounded-md border text-[10px] uppercase tracking-widest transition-all cursor-pointer ${cellClass(s)}`}
                       >
                         {s === "free" ? "+" : s}
                       </button>
